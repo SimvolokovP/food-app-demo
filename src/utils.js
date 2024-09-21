@@ -1,0 +1,1 @@
+export const tgUrl = 'http://85.119.146.179:8000';
