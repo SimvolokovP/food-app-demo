@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useState } from "react";
 import { useTg } from "../hooks/useTg";
-import { tgUrl } from "../utils";
+import { CHAT_ID, tgUrl, URI_API } from "../utils";
 import LoadingScreen from "./LoadingScreen";
+import axios from "axios";
 
 const OrderPage = ({ addedItems }) => {
   const { user, tg, queryId } = useTg();
@@ -32,6 +33,28 @@ const OrderPage = ({ addedItems }) => {
     return `${prefix}${randomNum}`;
   };
 
+  const sendToAdmin = () => {
+    let message = `<b>Заявка с сайта</b>\n`;
+    message += `<b>Отправитель: </b> ${name}\n`;
+    message += `<b>Время получения: </b> ${time}\n`;
+    message += `<b>Номер заказа: </b> ${orderNumber}\n`;
+    message += `<b>Список товаров:</b>\n`;
+
+    addedItems.forEach((item) => {
+      message += `- ${item.title} (Цена: ${item.price}, Количество: ${item.quantity})\n`;
+    });
+
+    axios
+      .post(URI_API, {
+        chat_id: CHAT_ID,
+        parse_mode: "html",
+        text: message,
+      })
+      .catch((error) => {
+        console.error("Error sending message to admin:", error);
+      });
+  };
+
   const onSendData = useCallback(async () => {
     setLoading(true);
     const newOrderNumber = generateOrderNumber();
@@ -54,6 +77,12 @@ const OrderPage = ({ addedItems }) => {
         },
         body: JSON.stringify(data),
       });
+
+      if (response.ok) {
+        sendToAdmin();
+      } else {
+        console.error("Failed to send order data:", response.statusText);
+      }
     } catch (error) {
       console.error("Error sending data:", error);
     } finally {
